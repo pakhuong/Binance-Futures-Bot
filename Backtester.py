@@ -1,6 +1,7 @@
 import os
 import pprint
 import time
+from typing import List
 from binance.client import Client
 import matplotlib.pyplot as plt
 from copy import copy
@@ -12,32 +13,41 @@ from Config_File import API_KEY, API_SECRET
 from Helper import Trade
 import matplotlib
 ####################### Settings #####################################
-account_balance_start = 1000  ##Starting Account Balance
-leverage = 10  ##leverage we want to use on the account, *Check valid leverages for coins*
-order_Size = .1  ##percent of Effective account to risk ie. (leverage X Account Balance) X order_size
-fee = .00036  ##binance fees for backtesting
+account_balance_start = 1000  # Starting Account Balance
+leverage = 10  # leverage we want to use on the account, *Check valid leverages for coins*
+# percent of Effective account to risk ie. (leverage X Account Balance) X order_size
+order_Size = .1
+fee = .00027  # binance fees for backtesting
 
 
-## WHEN PICKING START AND END ENSURE YOU HAVE AT LEAST 300 CANDLES OR ELSE YOU WILL GET AN ERROR
-start = '01-04-22'  ##start of backtest dd/mm/yy
-end = '01-05-22'  ##end of backtest   dd/mm/yy
-TIME_INTERVAL = '15m'  ##Candlestick interval in minutes, valid options: 1m,3m,5m,15m,30m,1h,2h,4h,6h,8h,12h,1d
-Number_Of_Trades = 1  ## allowed to open 5 positions at a time
+# WHEN PICKING START AND END ENSURE YOU HAVE AT LEAST 300 CANDLES OR ELSE YOU WILL GET AN ERROR
+start = '01-01-22'  # start of backtest dd/mm/yy
+end = '01-07-22'  # end of backtest   dd/mm/yy
+# Candlestick interval in minutes, valid options: 1m,3m,5m,15m,30m,1h,2h,4h,6h,8h,12h,1d
+TIME_INTERVAL = '1h'
+Number_Of_Trades = 7  # allowed to open 5 positions at a time
 printing_on = True
-add_delay = False  ## If true when printing we will sleep for 1 second to see the output clearer
-Trade_All_Symbols = True
-Trade_Each_Coin_With_Separate_Accounts = True  ## If True we will trade all coins with separate balances, to evaluate whether the strategy works on each coin individually
-only_show_profitable_coins = True  ## only works with Flag 'Trade_Each_Coin_With_Separate_Accounts' = True
-plot_graphs_to_folder = False  ## If trading each coin with isolated balances we can create plots in the specified folder below
-plot_strategy_name = 'tripleEMAStochasticRSIATR'
-graph_folder_location = 'C://Users//conor//Desktop//graphs//'
-path = f'{graph_folder_location}{plot_strategy_name}_{start}_{end}//'  ## where you want to store the graphs
+# If true when printing we will sleep for 1 second to see the output clearer
+add_delay = False
+Trade_All_Symbols = False
+# If True we will trade all coins with separate balances, to evaluate whether the strategy works on each coin individually
+Trade_Each_Coin_With_Separate_Accounts = False
+# only works with Flag 'Trade_Each_Coin_With_Separate_Accounts' = True
+only_show_profitable_coins = False
+# If trading each coin with isolated balances we can create plots in the specified folder below
+plot_graphs_to_folder = False
+plot_strategy_name = 'tripleEMA'
+graph_folder_location = 'C://Users//anhkh//Projects//Binance-Futures-Bot//graphs//'
+# where you want to store the graphs
+path = f'{graph_folder_location}{plot_strategy_name}_{start}_{end}_{TIME_INTERVAL}//'
 
-use_trailing_stop = 0  ##flag to use trailing stop, If on when the takeprofitval margin is reached a trailing stop will be set with the below percentage distance
-trailing_stop_callback = .005  ## 1% trailing stop activated by hitting the takeprofitval for a coin
+use_trailing_stop = 0  # flag to use trailing stop, If on when the takeprofitval margin is reached a trailing stop will be set with the below percentage distance
+# 1% trailing stop activated by hitting the takeprofitval for a coin
+trailing_stop_callback = .005
 
-symbol = ['ETHUSDT', 'BTCUSDT']  #['ZILUSDT','WAVESUSDT','RENUSDT','RAYUSDT','LINAUSDT','CTKUSDT']#,'AKROUSDT','ANCUSDT','API3USDT','BAKEUSDT',
-          #'CTSIUSDT','ICPUSDT','KNCUSDT','LINAUSDT','RAYUSDT']  #, 'COTIUSDT', 'ETHUSDT']  ## If Above is false strategy will only trade the list of coins specified here
+symbol = ['BTCUSDT', 'RLCUSDT', 'SOLUSDT', 'GMTUSDT',
+          'AVAXUSDT', 'ATOMUSDT', 'SANDUSDT']
+# If Above is false strategy will only trade the list of coins specified here
 print_to_csv = False
 csv_name = 'myFile.csv'
 
@@ -51,7 +61,7 @@ if print_to_csv:
         O.write('Date,Account Balance,symbol,Entry Price,Position Size,Current Price,TP val,SL val,Trade Direction,Highest Candle,Lowest Candle,Trade Status\n')
 client = Client(api_key=API_KEY, api_secret=API_SECRET)
 if Trade_All_Symbols:
-    symbol = []  ## reset symbol before we fill with all symbols below
+    symbol = []  # reset symbol before we fill with all symbols below
     x = client.futures_ticker()  # [0]
     for y in x:
         symbol.append(y['symbol'])
@@ -62,7 +72,8 @@ if plot_graphs_to_folder:
 if trailing_stop_callback < .001:
     trailing_stop_callback = .001
     print("*********************************\nCallback rate must be >= .001, I have set callback rate to .001 for you\n*********************************")
-trailing_stop_callback = round(trailing_stop_callback, 3) ##Traling stop can only be a multiple of .1% ie 3 decimals
+# Traling stop can only be a multiple of .1% ie 3 decimals
+trailing_stop_callback = round(trailing_stop_callback, 3)
 print(f"Coins Tradeable : {symbol}")
 winning_trades = []
 losing_trades = []
@@ -74,7 +85,8 @@ time_CAGR = Helper.get_CAGR(start, end)
 if Trade_Each_Coin_With_Separate_Accounts:
     Number_Of_Trades = len(symbol)
 Date_1min, High_1min, Low_1min, Close_1min, Open_1min, Date, Open, Close, High, Low, Volume, symbol = \
-    Helper.get_aligned_candles([], [], [], [], [], [], [], [], [], [], [], symbol, TIME_INTERVAL, start, end)
+    Helper.get_aligned_candles([], [], [], [], [], [], [], [], [], [
+    ], [], symbol, TIME_INTERVAL, start, end)
 print(symbol)
 account_balance = []
 Daily_return = []
@@ -88,8 +100,9 @@ day_start_equity = account_balance
 if printing_on:
     print(f"{TIME_INTERVAL} OHLC Candle Sticks from {start} to {end}")
 
-generate_heikin_ashi = True  ## generate Heikin ashi candles that can be consumed by your strategy in Bot Class
-Bots: [Bot] = []
+# generate Heikin ashi candles that can be consumed by your strategy in Bot Class
+generate_heikin_ashi = True
+Bots: List[Bot] = []
 y = client.futures_exchange_info()['symbols']
 coin_info = []
 for x in y:
@@ -97,7 +110,8 @@ for x in y:
                       x['filters'][0]['minPrice']])
 
 original_time_interval = copy(TIME_INTERVAL)
-TIME_INTERVAL = Helper.get_TIME_INTERVAL(TIME_INTERVAL)  ##Convert string to an integer for the rest of the script
+# Convert string to an integer for the rest of the script
+TIME_INTERVAL = Helper.get_TIME_INTERVAL(TIME_INTERVAL)
 if len(Open[0]) < 300:
     print("Not Enough Candles Increase the period over which you are running a backtest")
     time.sleep(20)
@@ -116,10 +130,10 @@ for k in range(len(symbol)):
             flag = 1
             break
     Bots.append(Bot(symbol[k], Open[k][:300], Close[k][:300], High[k][:300], Low[k][:300], Volume[k][:300], Date[k][:300],
-            Order_precision_temp, Coin_precision_temp, k, generate_heikin_ashi, tick_temp, 1))
+                    Order_precision_temp, Coin_precision_temp, k, generate_heikin_ashi, tick_temp, 1))
     Bots[k].add_hist([], [], [], [], [], [])
-tradeNO = 0  ##number of trades
-active_trades: [Trade] = []
+tradeNO = 0  # number of trades
+active_trades: List[Trade] = []
 new_trades = []
 if printing_on:
     print("Account Balance: ", account_balance[0])
@@ -128,14 +142,18 @@ for i in range(299*TIME_INTERVAL+1, len(Close_1min[0]) - 1):
         if printing_on:
             print("Negative Balance")
         break
-    ##give each coin next piece of data
+    # give each coin next piece of data
     if i % TIME_INTERVAL == 0 or TIME_INTERVAL == 1:
         for k in range(len(symbol)):
             Bots[k].handle_socket_message(-99, Date[k][int(i / TIME_INTERVAL) - 1],
-                                          float(Close[k][int(i / TIME_INTERVAL) - 1]),
-                                          float(Volume[k][int(i / TIME_INTERVAL) - 1]),
-                                          float(Open[k][int(i / TIME_INTERVAL) - 1]),
-                                          float(High[k][int(i / TIME_INTERVAL) - 1]),
+                                          float(
+                                              Close[k][int(i / TIME_INTERVAL) - 1]),
+                                          float(
+                                              Volume[k][int(i / TIME_INTERVAL) - 1]),
+                                          float(
+                                              Open[k][int(i / TIME_INTERVAL) - 1]),
+                                          float(
+                                              High[k][int(i / TIME_INTERVAL) - 1]),
                                           float(Low[k][int(i / TIME_INTERVAL) - 1]))
 
         for k in range(len(Bots)):
@@ -151,7 +169,7 @@ for i in range(299*TIME_INTERVAL+1, len(Close_1min[0]) - 1):
 
     if len(active_trades) == Number_Of_Trades:
         new_trades = []
-        ##Sort out new trades to be opened
+        # Sort out new trades to be opened
     while len(new_trades) > 0 and len(active_trades) < Number_Of_Trades:
         [index, [trade_direction, stop_loss, take_profit]] = new_trades.pop(0)
         order_qty = 0
@@ -159,18 +177,18 @@ for i in range(299*TIME_INTERVAL+1, len(Close_1min[0]) - 1):
         if Trade_Each_Coin_With_Separate_Accounts:
             Order_Notional = account_balance[index] * leverage * order_Size
             order_qty, entry_price, account_balance[index] = Helper.open_trade(Bots[index].symbol, Order_Notional,
-                                                                    account_balance[index], Open_1min[index][i],
-                                                                    fee, Bots[index].OP)
+                                                                               account_balance[index], Open_1min[index][i],
+                                                                               fee, Bots[index].OP)
         else:
             Order_Notional = account_balance[0] * leverage * order_Size
             order_qty, entry_price, account_balance[0] = Helper.open_trade(Bots[index].symbol, Order_Notional,
-                                                                               account_balance[0],
-                                                                               Open_1min[index][i],
-                                                                               fee, Bots[index].OP)
+                                                                           account_balance[0],
+                                                                           Open_1min[index][i],
+                                                                           fee, Bots[index].OP)
 
         take_profit_val = -99
         stop_loss_val = -99
-        ## Calculate the prices for TP and SL
+        # Calculate the prices for TP and SL
         if trade_direction == 1:
             take_profit_val = take_profit + entry_price
             stop_loss_val = entry_price - stop_loss
@@ -178,7 +196,7 @@ for i in range(299*TIME_INTERVAL+1, len(Close_1min[0]) - 1):
             take_profit_val = entry_price - take_profit
             stop_loss_val = entry_price + stop_loss
 
-        ## Round to the coins specific coin precision
+        # Round to the coins specific coin precision
         if Bots[index].CP == 0:
             take_profit_val = round(take_profit_val)
             stop_loss_val = round(stop_loss_val)
@@ -187,55 +205,61 @@ for i in range(299*TIME_INTERVAL+1, len(Close_1min[0]) - 1):
             stop_loss_val = round(stop_loss_val, Bots[index].CP)
         if order_qty > 0:
             tradeNO += 1
-            ## Append new trade, to our trade list
+            # Append new trade, to our trade list
             ## (index, position_size, tp_val, stop_loss_val, trade_direction, order_id_temp, symbol)
             active_trades.append(
                 Trade(index, order_qty, take_profit_val, stop_loss_val, trade_direction, '', Bots[index].symbol))
             active_trades[-1].entry_price = entry_price
             active_trades[-1].trade_start = Date_1min[index][i]
             change_occurred = True
-            ##Empty the list of trades
+            # Empty the list of trades
             if len(active_trades) == Number_Of_Trades:
                 new_trades = []
 
     for t in active_trades:
-        ## stuff for csv
+        # stuff for csv
         if t.trade_status == 1:
             if t.Highest_val < High_1min[t.index][i]:
                 t.Highest_val = High_1min[t.index][i]
             if t.Lowest_val > Low_1min[t.index][i]:
                 t.Lowest_val = Low_1min[t.index][i]
-        ## Check SL Hit
+        # Check SL Hit
         if t.trade_status == 1:
             if Trade_Each_Coin_With_Separate_Accounts:
-                t, account_balance[t.index] = Helper.check_SL(t, account_balance[t.index], High_1min[t.index][i], Low_1min[t.index][i], fee)
+                t, account_balance[t.index] = Helper.check_SL(
+                    t, account_balance[t.index], High_1min[t.index][i], Low_1min[t.index][i], fee)
             else:
-                t, account_balance[0] = Helper.check_SL(t, account_balance[0], High_1min[t.index][i], Low_1min[t.index][i], fee)
+                t, account_balance[0] = Helper.check_SL(
+                    t, account_balance[0], High_1min[t.index][i], Low_1min[t.index][i], fee)
             if t.trade_status != 1:
                 change_occurred = True
-        ##Check if TP Hit
+        # Check if TP Hit
         if t.trade_status == 1:
             if Trade_Each_Coin_With_Separate_Accounts:
-                t, account_balance[t.index] = Helper.check_TP(t, account_balance[t.index], High_1min[t.index][i], Low_1min[t.index][i], fee, use_trailing_stop, trailing_stop_callback, Bots[t.index].CP)
+                t, account_balance[t.index] = Helper.check_TP(
+                    t, account_balance[t.index], High_1min[t.index][i], Low_1min[t.index][i], fee, use_trailing_stop, trailing_stop_callback, Bots[t.index].CP)
             else:
-                t, account_balance[0] = Helper.check_TP(t, account_balance[0], High_1min[t.index][i], Low_1min[t.index][i], fee, use_trailing_stop, trailing_stop_callback, Bots[t.index].CP)
+                t, account_balance[0] = Helper.check_TP(
+                    t, account_balance[0], High_1min[t.index][i], Low_1min[t.index][i], fee, use_trailing_stop, trailing_stop_callback, Bots[t.index].CP)
             if t.trade_status != 1:
                 change_occurred = True
         if Bots[t.index].use_close_pos and t.trade_status == 1 and (i % TIME_INTERVAL == 0 or TIME_INTERVAL == 1):
-            ## Check each interval if the close position was met
+            # Check each interval if the close position was met
             close_pos = Bots[t.index].check_close_pos(t.trade_direction)
             if close_pos:
                 if Trade_Each_Coin_With_Separate_Accounts:
-                    t, account_balance[t.index] = Helper.close_pos(t, account_balance[t.index], fee, Close_1min[t.index][i])
+                    t, account_balance[t.index] = Helper.close_pos(
+                        t, account_balance[t.index], fee, Close_1min[t.index][i])
                 else:
-                    t, account_balance[0] = Helper.close_pos(t, account_balance[0], fee, Close_1min[t.index][i])
+                    t, account_balance[0] = Helper.close_pos(
+                        t, account_balance[0], fee, Close_1min[t.index][i])
                 close_pos = 0
-                print(f"Closing Trade on {t.symbol} as Close Position condition was met")
-                t.trade_status = 4  ## Closed on condition
+                print(
+                    f"Closing Trade on {t.symbol} as Close Position condition was met")
+                t.trade_status = 4  # Closed on condition
                 change_occurred = True
 
-
-    ## Check PNL here as well as print the current trades:
+    # Check PNL here as well as print the current trades:
     if printing_on:
         trade_price = []
         for t in active_trades:
@@ -250,32 +274,38 @@ for i in range(299*TIME_INTERVAL+1, len(Close_1min[0]) - 1):
             print("**************** You have been liquidated *******************")
             profitgraph[0].append(0)
             account_balance[0] = 0
-            break  ## break out of loop as weve been liquidated
+            break  # break out of loop as weve been liquidated
         if add_delay:
             time.sleep(1)
 
     k = 0
     while k < len(active_trades):
         if active_trades[k].trade_status == 2:
-            ## Win
-            winning_trades.append([active_trades[k].symbol, f'{active_trades[k].trade_start}'])
+            # Win
+            winning_trades.append(
+                [active_trades[k].symbol, f'{active_trades[k].trade_start}'])
             if Trade_Each_Coin_With_Separate_Accounts:
-                profitgraph[active_trades[k].index].append(account_balance[active_trades[k].index])
+                profitgraph[active_trades[k].index].append(
+                    account_balance[active_trades[k].index])
             else:
                 profitgraph[0].append(account_balance[0])
             active_trades.pop(k)
         elif active_trades[k].trade_status == 3:
-            ## Loss
-            losing_trades.append([active_trades[k].symbol, f'{active_trades[k].trade_start}'])
+            # Loss
+            losing_trades.append(
+                [active_trades[k].symbol, f'{active_trades[k].trade_start}'])
             if Trade_Each_Coin_With_Separate_Accounts:
-                profitgraph[active_trades[k].index].append(account_balance[active_trades[k].index])
+                profitgraph[active_trades[k].index].append(
+                    account_balance[active_trades[k].index])
             else:
                 profitgraph[0].append(account_balance[0])
             active_trades.pop(k)
         elif active_trades[k].trade_status == 4:
-            closed_on_condition.append([active_trades[k].symbol, f'{active_trades[k].trade_start}'])
+            closed_on_condition.append(
+                [active_trades[k].symbol, f'{active_trades[k].trade_start}'])
             if Trade_Each_Coin_With_Separate_Accounts:
-                profitgraph[active_trades[k].index].append(account_balance[active_trades[k].index])
+                profitgraph[active_trades[k].index].append(
+                    account_balance[active_trades[k].index])
             else:
                 profitgraph[0].append(account_balance[0])
             active_trades.pop(k)
@@ -289,12 +319,14 @@ for i in range(299*TIME_INTERVAL+1, len(Close_1min[0]) - 1):
             print(f"Data Set Finished: {x[i]}")
     if i % 1440 == 0 and i != 0:
         for j in range(len(symbol)):
-            Daily_return[j].append(account_balance[j])  # (day_return/day_start_equity)
+            # (day_return/day_start_equity)
+            Daily_return[j].append(account_balance[j])
         # day_return=0
         # day_start_equity=AccountBalance
     elif i == len(Close_1min[0]) - 1:
         for j in range(len(symbol)):
-            Daily_return[j].append(account_balance[j])  # (day_return/day_start_equity)
+            # (day_return/day_start_equity)
+            Daily_return[j].append(account_balance[j])
 print("\n")
 if not Trade_Each_Coin_With_Separate_Accounts:
     average = 0
@@ -302,10 +334,11 @@ if not Trade_Each_Coin_With_Separate_Accounts:
     for i in range(1, len(profitgraph[0])):
         if profitgraph[0][i] > profitgraph[0][i - 1]:
             num_wins += 1
-            average += (profitgraph[0][i] - profitgraph[0][i - 1]) / profitgraph[0][i]
+            average += (profitgraph[0][i] - profitgraph[0]
+                        [i - 1]) / profitgraph[0][i]
     average /= num_wins
 
-    risk_free_rate = 1.41  ##10 year treasury rate
+    risk_free_rate = 1.41  # 10 year treasury rate
     df = pd.DataFrame({'Account_Balance': Daily_return[0]})
     df['daily_return'] = df['Account_Balance'].pct_change()
     df['cum_return'] = (1 + df['daily_return']).cumprod()
@@ -315,9 +348,11 @@ if not Trade_Each_Coin_With_Separate_Accounts:
     max_dd = df['drawdown %'].max() * 100
 
     # cum_ret = np.array(df['cum_return'])
-    CAGR = ((df['cum_return'].iloc[-1]) ** (1 / time_CAGR) - 1) * 100  # ((df['cum_return'].iloc[-1])**(1/time_CAGR)-1)*100
+    CAGR = ((df['cum_return'].iloc[-1]) ** (1 / time_CAGR) - 1) * \
+        100  # ((df['cum_return'].iloc[-1])**(1/time_CAGR)-1)*100
     vol = (df['daily_return'].std() * np.sqrt(365)) * 100
-    neg_vol = (df[df['daily_return'] < 0]['daily_return'].std() * np.sqrt(365)) * 100
+    neg_vol = (df[df['daily_return'] < 0]
+               ['daily_return'].std() * np.sqrt(365)) * 100
     Sharpe_ratio = (CAGR - risk_free_rate) / vol
     sortino_ratio = (CAGR - risk_free_rate) / neg_vol
     calmar_ratio = CAGR / max_dd
@@ -329,7 +364,8 @@ if not Trade_Each_Coin_With_Separate_Accounts:
     print("\nSymbol(s):", symbol, "fee:", fee)
     print(f"{original_time_interval} OHLC Candle Sticks from {start} to {end}")
     print("Account Balance:", account_balance[0])
-    print("% Gain on Account:", ((account_balance[0] - originalBalance[0]) * 100) / originalBalance[0])
+    print("% Gain on Account:",
+          ((account_balance[0] - originalBalance[0]) * 100) / originalBalance[0])
     print("Total Returns:", account_balance[0] - originalBalance[0], "\n")
 
     print(f"Annualized Volatility: {round(vol, 4)}%")
@@ -351,7 +387,7 @@ if not Trade_Each_Coin_With_Separate_Accounts:
     plt.show()
 
 else:
-    ## Top of script:
+    # Top of script:
     matplotlib.use("Agg")
     num_wins_total = 0
     if not os.path.exists(path):
@@ -365,11 +401,12 @@ else:
             for i in range(1, len(profitgraph[j])):
                 if profitgraph[j][i] > profitgraph[j][i - 1]:
                     num_wins += 1
-                    average += (profitgraph[j][i] - profitgraph[j][i - 1]) / profitgraph[j][i]
+                    average += (profitgraph[j][i] -
+                                profitgraph[j][i - 1]) / profitgraph[j][i]
             if num_wins != 0:
                 average /= num_wins
             num_wins_total += num_wins
-            risk_free_rate = 1.41  ##10 year treasury rate
+            risk_free_rate = 1.41  # 10 year treasury rate
             try:
                 df = pd.DataFrame({'Account_Balance': Daily_return[j]})
                 df['daily_return'] = df['Account_Balance'].pct_change()
@@ -381,17 +418,21 @@ else:
 
                 # cum_ret = np.array(df['cum_return'])
                 CAGR = ((df['cum_return'].iloc[-1]) ** (
-                            1 / time_CAGR) - 1) * 100  # ((df['cum_return'].iloc[-1])**(1/time_CAGR)-1)*100
+                    1 / time_CAGR) - 1) * 100  # ((df['cum_return'].iloc[-1])**(1/time_CAGR)-1)*100
                 vol = (df['daily_return'].std() * np.sqrt(365)) * 100
-                neg_vol = (df[df['daily_return'] < 0]['daily_return'].std() * np.sqrt(365)) * 100
+                neg_vol = (df[df['daily_return'] < 0]
+                           ['daily_return'].std() * np.sqrt(365)) * 100
                 Sharpe_ratio = (CAGR - risk_free_rate) / vol
                 sortino_ratio = (CAGR - risk_free_rate) / neg_vol
                 calmar_ratio = CAGR / max_dd
                 print("Symbol:", symbol[j], "fee:", fee)
-                print(f"{original_time_interval} OHLC Candle Sticks from {start} to {end}")
+                print(
+                    f"{original_time_interval} OHLC Candle Sticks from {start} to {end}")
                 print("Account Balance:", account_balance[j])
-                print("% Gain on Account:", ((account_balance[j] - originalBalance[j]) * 100) / originalBalance[j])
-                print("Total Returns:", account_balance[j] - originalBalance[j])
+                print("% Gain on Account:", ((
+                    account_balance[j] - originalBalance[j]) * 100) / originalBalance[j])
+                print("Total Returns:",
+                      account_balance[j] - originalBalance[j])
                 print(f"Annualized Volatility: {round(vol, 4)}%")
                 print(f"CAGR: {round(CAGR, 4)}%")
                 print("Sharpe Ratio:", round(Sharpe_ratio, 4))
@@ -401,11 +442,14 @@ else:
                 print(f"Average Win: {round(average * 100, 4)}%\n")
                 if plot_graphs_to_folder:
                     plt.plot(profitgraph[j])
-                    plt.title(f"{symbol[j]}: {original_time_interval} from {start} to {end}")
+                    plt.title(
+                        f"{symbol[j]}: {original_time_interval} from {start} to {end}")
                     plt.ylabel('Account Balance')
                     plt.xlabel('Number of Trades')
-                    name_of_plot = f'{symbol[j]}_{plot_strategy_name}'  ## Name of the graph, will overwrite if it already exists
-                    plt.savefig(f'{path}{original_time_interval}//{name_of_plot}.png', dpi=300, bbox_inches='tight')
+                    # Name of the graph, will overwrite if it already exists
+                    name_of_plot = f'{symbol[j]}_{plot_strategy_name}'
+                    plt.savefig(
+                        f'{path}{original_time_interval}//{name_of_plot}.png', dpi=300, bbox_inches='tight')
                     plt.close()
             except:
                 pass
@@ -419,5 +463,5 @@ else:
     print(f"Winning Trades:\n {num_wins_total}")
     print(f"Losing Trades:\n {tradeNO - num_wins_total}")
     print(f"Trades Closed on Condition:\n {closed_on_condition}")
-#for i in range(len(Bots[0].Date)):
+# for i in range(len(Bots[0].Date)):
 #    print(f"Date: {Bots[0].Date[i]}, Open_H: {Bots[0].Open_H[i]}, High_H: {Bots[0].High_H[i]}, Low_H: {Bots[0].Low_H[i]}, Close_H: {Bots[0].Close_H[i]}")

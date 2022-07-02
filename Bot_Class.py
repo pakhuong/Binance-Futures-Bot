@@ -11,6 +11,8 @@ from ta.trend import stc
 import numpy as np
 import pandas as pd
 import TradingStrats as TS
+
+
 class Bot:
     def __init__(self, symbol, Open, Close, High, Low, Volume, Date, OP, CP, index, generate_heikin_ashi, tick,
                  backtesting=0):
@@ -60,19 +62,23 @@ class Bot:
             self.Low = Low_temp
             self.Volume = Volume_temp
         if self.generate_heikin_ashi:
-            ##Create Heikin Ashi bars
+            # Create Heikin Ashi bars
             for i in range(len(self.Close)):
-                self.Close_H.append((self.Open[i] + self.Close[i] + self.Low[i] + self.High[i]) / 4)
+                self.Close_H.append(
+                    (self.Open[i] + self.Close[i] + self.Low[i] + self.High[i]) / 4)
                 if i == 0:
                     self.Open_H.append((self.Close[i] + self.Open[i]) / 2)
                     self.High_H.append(self.High[i])
                     self.Low_H.append(self.Low[i])
                 else:
-                    self.Open_H.append((self.Open_H[i - 1] + self.Close_H[i - 2]) / 2)
-                    self.High_H.append(max(self.High[i], self.Open_H[i], self.Close_H[i]))
-                    self.Low_H.append(min(self.Low[i], self.Open_H[i], self.Close_H[i]))
+                    self.Open_H.append(
+                        (self.Open_H[i - 1] + self.Close_H[i - 2]) / 2)
+                    self.High_H.append(
+                        max(self.High[i], self.Open_H[i], self.Close_H[i]))
+                    self.Low_H.append(
+                        min(self.Low[i], self.Open_H[i], self.Close_H[i]))
         self.add_hist_complete = 1
-        #for i in range(len(self.Date)):
+        # for i in range(len(self.Date)):
         #    print(f"Date: {self.Date[i]}, Open_H: {self.Open_H[i]}, Close_H: {self.Close_H[i]}, High_H: {self.High_H[i]}, Low_H: {self.Low_H[i]}")
 
     def handle_socket_message(self, Data, Date=0, Close=0, Volume=0, Open=0, High=0, Low=0):
@@ -92,10 +98,14 @@ class Bot:
                     self.Low.pop(0)
                     self.Open.pop(0)
                     if self.generate_heikin_ashi:
-                        self.Close_H.append((self.Open[-1] + self.Close[-1] + self.Low[-1] + self.High[-1]) / 4)
-                        self.Open_H.append((self.Open_H[-1] + self.Close_H[-2]) / 2)
-                        self.High_H.append(max(self.High[-1], self.Open_H[-1], self.Close_H[-1]))
-                        self.Low_H.append(min(self.Low[-1], self.Open_H[-1], self.Close_H[-1]))
+                        self.Close_H.append(
+                            (self.Open[-1] + self.Close[-1] + self.Low[-1] + self.High[-1]) / 4)
+                        self.Open_H.append(
+                            (self.Open_H[-1] + self.Close_H[-2]) / 2)
+                        self.High_H.append(
+                            max(self.High[-1], self.Open_H[-1], self.Close_H[-1]))
+                        self.Low_H.append(
+                            min(self.Low[-1], self.Open_H[-1], self.Close_H[-1]))
                         self.Open_H.pop(0)
                         self.Close_H.pop(0)
                         self.Low_H.pop(0)
@@ -116,10 +126,14 @@ class Bot:
                     self.Low.pop(0)
                     self.Open.pop(0)
                     if self.generate_heikin_ashi:
-                        self.Close_H.append((self.Open[-1] + self.Close[-1] + self.Low[-1] + self.High[-1]) / 4)
-                        self.Open_H.append((self.Open_H[-1] + self.Close_H[-2]) / 2)
-                        self.High_H.append(max(self.High[-1], self.Open_H[-1], self.Close_H[-1]))
-                        self.Low_H.append(min(self.Low[-1], self.Open_H[-1], self.Close_H[-1]))
+                        self.Close_H.append(
+                            (self.Open[-1] + self.Close[-1] + self.Low[-1] + self.High[-1]) / 4)
+                        self.Open_H.append(
+                            (self.Open_H[-1] + self.Close_H[-2]) / 2)
+                        self.High_H.append(
+                            max(self.High[-1], self.Open_H[-1], self.Close_H[-1]))
+                        self.Low_H.append(
+                            min(self.Low[-1], self.Open_H[-1], self.Close_H[-1]))
                         self.Open_H.pop(0)
                         self.Close_H.pop(0)
                         self.Low_H.pop(0)
@@ -135,34 +149,48 @@ class Bot:
             self.socket_failed = True
 
     def Make_decision(self):
-        ##Initialize vars:
-        Trade_Direction = -99  ## Short (0), Long (1)
-        stop_loss_val = -99  ##the margin of increase/decrease that would stop us out/ be our take profit, NOT the price target.
-        take_profit_val = -99  # That is worked out later by adding or subtracting:
-        ## Strategies found in TradingStrats.py:
+        # Initialize vars:
+        Trade_Direction = -99  # Short (0), Long (1)
+        # the margin of increase/decrease that would stop us out/ be our take profit, NOT the price target.
+        stop_loss_val = -99
+        # That is worked out later by adding or subtracting:
+        take_profit_val = -99
+        # Strategies found in TradingStrats.py:
         # Trade_Direction,stop_loss_val, take_profit_val = TS.StochRSIMACD(Trade_Direction, self.Close,self.High,self.Low)
-        Trade_Direction,stop_loss_val, take_profit_val = TS.tripleEMAStochasticRSIATR(self.Close,self.High,self.Low,Trade_Direction)
-        # Trade_Direction, stop_loss_val, take_profit_val = TS.tripleEMA(self.Close, self.High, self.Low, Trade_Direction)
+        # Trade_Direction, stop_loss_val, take_profit_val = TS.tripleEMAStochasticRSIATR(
+        #     self.Close, self.High, self.Low, Trade_Direction)
+        Trade_Direction, stop_loss_val, take_profit_val = TS.tripleEMA(
+            self.Close, self.High, self.Low, Trade_Direction)
         # Trade_Direction, stop_loss_val, take_profit_val = TS.breakout(Trade_Direction,self.Close,self.Volume,self.High, self.Low)
         # Trade_Direction,stop_loss_val,take_profit_val = TS.stochBB(Trade_Direction,self.Close, self.High, self.Low)
         # Trade_Direction, stop_loss_val, take_profit_val = TS.goldenCross(Trade_Direction,self.Close, self.High, self.Low)
         # Trade_Direction , stop_loss_val, take_profit_val = TS.candle_wick(Trade_Direction,self.Close,self.Open,self.High,self.Low)
         # Trade_Direction,stop_loss_val,take_profit_val = TS.fibMACD(Trade_Direction, self.Close, self.Open,self.High,self.Low)
-        #Trade_Direction, stop_loss_val, take_profit_val = TS.EMA_cross(Trade_Direction, self.Close, self.High, self.Low)
+        # Trade_Direction, stop_loss_val, take_profit_val = TS.EMA_cross(Trade_Direction, self.Close, self.High, self.Low)
 
-        ## need to set self.use_close_pos = True if you want to use the close position on condition functionality of the strategies below
-        ##  And also need to uncomment the corresponding strategy below in check_close_pos()
-        #self.use_close_pos = True
+        # need to set self.use_close_pos = True if you want to use the close position on condition functionality of the strategies below
+        # And also need to uncomment the corresponding strategy below in check_close_pos()
+        # self.use_close_pos = True
         # Trade_Direction, stop_loss_val, take_profit_val, _ = TS.heikin_ashi_ema2(self.Close, self.Open_H, self.High_H, self.Low_H, self.Close_H, Trade_Direction, stop_loss_val, take_profit_val, -99, 0)
-        #Trade_Direction,stop_loss_val,take_profit_val,_ = TS.heikin_ashi_ema(self.Close, self.Open_H, self.Close_H, Trade_Direction, stop_loss_val,take_profit_val, -99, 0)
+        # Trade_Direction,stop_loss_val,take_profit_val,_ = TS.heikin_ashi_ema(self.Close, self.Open_H, self.Close_H, Trade_Direction, stop_loss_val,take_profit_val, -99, 0)
+        # Trade_Direction, stop_loss_val, take_profit_val, _ = TS.keltner_channel_breakout(
+        #     self.High, self.Low, self.Close, Trade_Direction, stop_loss_val, take_profit_val, -99, 0)
+        # Trade_Direction, stop_loss_val, take_profit_val = TS.psar_macd_cross_over(
+        #     self.High, self.Low, self.Close, Trade_Direction, stop_loss_val, take_profit_val)
+
         return Trade_Direction, stop_loss_val, take_profit_val
 
     def check_close_pos(self, current_pos):
-        ## need to uncomment corresponding strategy in here too if using close position on condition functionality
-        close_pos = 0
-        Trade_Direction = -99  ## Short (0), Long (1)
-        stop_loss_val = -99  ##the margin of increase/decrease that would stop us out/ be our take profit, NOT the price target.
-        take_profit_val = -99  # That is worked out later by adding or subtracting:
-        #_, _, _, close_pos = TS.heikin_ashi_ema2(self.Close, self.Open_H, self.High_H, self.Low_H, self.Close_H, Trade_Direction, stop_loss_val, take_profit_val, current_pos, 0)
-        #_,_,_,close_pos = TS.heikin_ashi_ema(self.Close, self.Open_H, self.Close_H, Trade_Direction, stop_loss_val,take_profit_val, current_pos, 0)
+        # need to uncomment corresponding strategy in here too if using close position on condition functionality
+        # close_pos = 0
+        Trade_Direction = -99  # Short (0), Long (1)
+        # the margin of increase/decrease that would stop us out/ be our take profit, NOT the price target.
+        stop_loss_val = -99
+        # That is worked out later by adding or subtracting:
+        take_profit_val = -99
+        # _, _, _, close_pos = TS.heikin_ashi_ema2(self.Close, self.Open_H, self.High_H, self.Low_H, self.Close_H, Trade_Direction, stop_loss_val, take_profit_val, current_pos, 0)
+        # _,_,_,close_pos = TS.heikin_ashi_ema(self.Close, self.Open_H, self.Close_H, Trade_Direction, stop_loss_val,take_profit_val, current_pos, 0)
+        # _, _, _, close_pos = TS.keltner_channel_breakout(
+        #     self.High, self.Low, self.Close, Trade_Direction, stop_loss_val, take_profit_val, current_pos, 0)
+
         return close_pos
