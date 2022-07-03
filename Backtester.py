@@ -17,7 +17,7 @@ account_balance_start = 1000  # Starting Account Balance
 leverage = 10  # leverage we want to use on the account, *Check valid leverages for coins*
 # percent of Effective account to risk ie. (leverage X Account Balance) X order_size
 order_Size = .1
-fee = .00027  # binance fees for backtesting
+fee = .00036  # binance fees for backtesting
 
 
 # WHEN PICKING START AND END ENSURE YOU HAVE AT LEAST 300 CANDLES OR ELSE YOU WILL GET AN ERROR
@@ -47,6 +47,7 @@ trailing_stop_callback = .005
 
 symbol = ['BTCUSDT', 'RLCUSDT', 'SOLUSDT', 'GMTUSDT',
           'AVAXUSDT', 'ATOMUSDT', 'SANDUSDT']
+
 # If Above is false strategy will only trade the list of coins specified here
 print_to_csv = False
 csv_name = 'myFile.csv'
